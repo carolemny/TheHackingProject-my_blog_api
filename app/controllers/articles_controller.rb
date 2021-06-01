@@ -1,6 +1,7 @@
 class ArticlesController < ApplicationController
+  before_action :authenticate_user!, only: [:create, :update, :destroy]
   before_action :set_article, only: [:show, :update, :destroy]
-  before_action :authenticate_user!
+  before_action :is_author?, only: [:update, :destroy]
 
   # GET /articles
   def index
@@ -17,7 +18,7 @@ class ArticlesController < ApplicationController
   # POST /articles
   def create
     @article = Article.new(article_params)
-
+    @article.user_id = current_user.id
     if @article.save
       render json: @article, status: :created, location: @article
     else
@@ -49,5 +50,12 @@ class ArticlesController < ApplicationController
   # Only allow a list of trusted parameters through.
   def article_params
     params.require(:article).permit(:title, :content)
+  end
+
+  def is_author?
+    #binding.pry
+    if current_user.nil? || @article.user_id != current_user.id
+      render json: { message: "You are not authorized to edit/delete this post." }, status: :unauthorized
+    end
   end
 end
